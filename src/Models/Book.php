@@ -1,58 +1,52 @@
 <?php
 namespace App\Models;
 
-use App\Database\Connection;
-use PDO;
-
 class Book
 {
-    private PDO $pdo;
+    private ?int $id;
+    private string $judul;
+    private string $penulis;
+    private int $tahun;
+    private int $stok;
+    private ?string $created_at;
+    private ?string $updated_at;
 
-    public function __construct()
-    {
-        $this->pdo = Connection::get();
+    public function __construct(
+        string $judul,
+        string $penulis,
+        int $tahun,
+        int $stok = 0,
+        ?int $id = null,
+        ?string $created_at = null,
+        ?string $updated_at = null
+    ) {
+        $this->id = $id;
+        $this->judul = $judul;
+        $this->penulis = $penulis;
+        $this->tahun = $tahun;
+        $this->stok = $stok;
+        $this->created_at = $created_at;
+        $this->updated_at = $updated_at;
     }
 
-    public function getAll(): array
-    {
-        $stmt = $this->pdo->query("SELECT * FROM books ORDER BY id DESC");
-        return $stmt->fetchAll();
-    }
+    public function getId(): ?int { return $this->id; }
+    public function getJudul(): string { return $this->judul; }
+    public function getPenulis(): string { return $this->penulis; }
+    public function getTahun(): int { return $this->tahun; }
+    public function getStok(): int { return $this->stok; }
+    public function getCreatedAt(): ?string { return $this->created_at; }
+    public function getUpdatedAt(): ?string { return $this->updated_at; }
 
-    public function find(int $id): ?array
+    public function toArray(): array
     {
-        $stmt = $this->pdo->prepare("SELECT * FROM books WHERE id = :id");
-        $stmt->execute(['id' => $id]);
-        $result = $stmt->fetch();
-        return $result ?: null;
-    }
-
-    public function create(array $data): bool
-    {
-        $stmt = $this->pdo->prepare("INSERT INTO books (judul, penulis, tahun, stok) VALUES (:judul, :penulis, :tahun, :stok)");
-        return $stmt->execute([
-            'judul' => $data['judul'],
-            'penulis' => $data['penulis'],
-            'tahun' => $data['tahun'],
-            'stok' => $data['stok'] ?? 0
-        ]);
-    }
-
-    public function update(int $id, array $data): bool
-    {
-        $stmt = $this->pdo->prepare("UPDATE books SET judul = :judul, penulis = :penulis, tahun = :tahun, stok = :stok WHERE id = :id");
-        return $stmt->execute([
-            'id' => $id,
-            'judul' => $data['judul'],
-            'penulis' => $data['penulis'],
-            'tahun' => $data['tahun'],
-            'stok' => $data['stok']
-        ]);
-    }
-
-    public function delete(int $id): bool
-    {
-        $stmt = $this->pdo->prepare("DELETE FROM books WHERE id = :id");
-        return $stmt->execute(['id' => $id]);
+        return [
+            'id' => $this->id,
+            'judul' => $this->judul,
+            'penulis' => $this->penulis,
+            'tahun' => $this->tahun,
+            'stok' => $this->stok,
+            'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at
+        ];
     }
 }

@@ -4,6 +4,8 @@ namespace App\Controllers;
 use App\Services\BookService;
 use App\Core\Request;
 use App\Core\Response;
+use App\Exceptions\ValidationException;
+use InvalidArgumentException;
 use Exception;
 
 class BookController
@@ -34,7 +36,7 @@ class BookController
                 'message' => 'Detail buku',
                 'data' => $book->toArray()
             ]);
-        } catch (Exception $e) {
+        } catch (InvalidArgumentException $e) {
             Response::json(['success' => false, 'message' => $e->getMessage()], 404);
         }
     }
@@ -50,8 +52,12 @@ class BookController
                 'message' => 'Buku berhasil dibuat',
                 'data' => $book->toArray()
             ], 201);
-        } catch (Exception $e) {
-            Response::json(['success' => false, 'message' => $e->getMessage()], 422);
+        } catch (ValidationException $e) {
+            Response::json([
+                'success' => false,
+                'message' => $e->getMessage(),
+                'errors'  => $e->getErrors()
+            ], 422);
         }
     }
 
@@ -66,7 +72,13 @@ class BookController
                 'message' => 'Buku berhasil diperbarui',
                 'data' => $book->toArray()
             ]);
-        } catch (Exception $e) {
+        } catch (ValidationException $e) {
+            Response::json([
+                'success' => false,
+                'message' => $e->getMessage(),
+                'errors'  => $e->getErrors()
+            ], 422);
+        } catch (InvalidArgumentException $e) {
             Response::json(['success' => false, 'message' => $e->getMessage()], 404);
         }
     }
@@ -79,7 +91,7 @@ class BookController
                 'success' => true,
                 'message' => 'Buku berhasil dihapus'
             ]);
-        } catch (Exception $e) {
+        } catch (InvalidArgumentException $e) {
             Response::json(['success' => false, 'message' => $e->getMessage()], 404);
         }
     }

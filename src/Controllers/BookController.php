@@ -17,13 +17,15 @@ class BookController
         $this->service = $service;
     }
 
-    public function index(Request $request): void
+   public function index(Request $request): void
     {
         $search = (string) $request->getQuery('search', '');
         $page = (int) $request->getQuery('page', 1);
         $limit = (int) $request->getQuery('limit', 5);
+        $sortBy = (string) $request->getQuery('sort', 'id');
+        $order = (string) $request->getQuery('order', 'desc');
 
-        $result = $this->service->getPaginatedBooks($search, $page, $limit);
+        $result = $this->service->getPaginatedBooks($search, $page, $limit, $sortBy, $order);
 
         Response::json([
             'success' => true,
@@ -33,7 +35,9 @@ class BookController
                 'current_page' => $result['page'],
                 'limit' => $result['limit'],
                 'total_items' => $result['total'],
-                'total_pages' => $result['total_pages']
+                'total_pages' => $result['total_pages'],
+                'sort_by' => $sortBy,
+                'order' => strtoupper($order)
             ]
         ]);
     }

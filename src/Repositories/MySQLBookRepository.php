@@ -82,7 +82,7 @@ class MySQLBookRepository implements BookRepositoryInterface
         return $stmt->execute(['id' => $id]);
     }
 
-    public function paginate(string $search = '', int $page = 1, int $limit = 10): array
+    public function paginate(string $search = '', int $page = 1, int $limit = 10, string $sortBy = 'id', string $order = 'DESC'): array
     {
         $offset = ($page - 1) * $limit;
         $params = [];
@@ -94,14 +94,19 @@ class MySQLBookRepository implements BookRepositoryInterface
             $params['search2'] = "%$search%";
         }
 
+        // Whitelist kolom dan arah sorting untuk keamanan
+        $allowedColumns = ['id', 'judul', 'penulis', 'tahun', 'stok'];
+        $column = in_array(strtolower($sortBy), $allowedColumns, true) ? strtolower($sortBy) : 'id';
+        $direction = strtoupper($order) === 'ASC' ? 'ASC' : 'DESC';
+
         // Hitung total data
         $countSql = "SELECT COUNT(*) FROM books $where";
         $stmtCount = $this->pdo->prepare($countSql);
         $stmtCount->execute($params);
         $total = (int) $stmtCount->fetchColumn();
 
-        // Ambil data dengan LIMIT dan OFFSET
-        $dataSql = "SELECT * FROM books $where ORDER BY id DESC LIMIT $limit OFFSET $offset";
+        // Ambil data dengan LIMIT, OFFSET, dan dynamic ORDER BY
+        $dataSql = "SELECT * FROM books $where ORDER BY $column $direction LIMIT $limit OFFSET $offset";
         $stmtData = $this->pdo->prepare($dataSql);
         foreach ($params as $k => $v) {
             $stmtData->bindValue(":$k", $v);

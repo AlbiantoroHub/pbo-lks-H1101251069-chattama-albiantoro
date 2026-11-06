@@ -60,8 +60,8 @@ class BookService
         return $this->repository->delete($id);
     }
 
-    public function getPaginatedBooks(string $search = '', int $page = 1, int $limit = 10): array
+    public function getPaginatedBooks(string $search = '', int $page = 1, int $limit = 10, string $sortBy = 'id', string $order = 'DESC'): array
     {
-        return $this->repository->paginate($search, $page, $limit);
+        return $this->repository->paginate($search, $page, $limit, $sortBy, $order);
     }
 }

@@ -10,5 +10,5 @@ interface BookRepositoryInterface
     public function create(array $data): int;
     public function update(int $id, array $data): bool;
     public function delete(int $id): bool;
-    public function paginate(string $search = '', int $page = 1, int $limit = 10): array;
+    public function paginate(string $search = '', int $page = 1, int $limit = 10, string $sortBy = 'id', string $order = 'DESC'): array;
 }

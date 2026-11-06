@@ -15,4 +15,9 @@ class Request
         $input = file_get_contents('php://input');
         return $input ? json_decode($input, true) ?? [] : [];
     }
+
+    public function getQuery(string $key, $default = null)
+    {
+        return $_GET[$key] ?? $default;
+    }
 }

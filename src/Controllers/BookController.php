@@ -19,11 +19,22 @@ class BookController
 
     public function index(Request $request): void
     {
-        $books = $this->service->getAllBooks();
+        $search = (string) $request->getQuery('search', '');
+        $page = (int) $request->getQuery('page', 1);
+        $limit = (int) $request->getQuery('limit', 5);
+
+        $result = $this->service->getPaginatedBooks($search, $page, $limit);
+
         Response::json([
             'success' => true,
             'message' => 'Daftar buku',
-            'data' => array_map(fn($book) => $book->toArray(), $books)
+            'data' => array_map(fn($b) => $b->toArray(), $result['books']),
+            'pagination' => [
+                'current_page' => $result['page'],
+                'limit' => $result['limit'],
+                'total_items' => $result['total'],
+                'total_pages' => $result['total_pages']
+            ]
         ]);
     }
 

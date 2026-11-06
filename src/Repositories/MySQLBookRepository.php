@@ -81,4 +81,52 @@ class MySQLBookRepository implements BookRepositoryInterface
         $stmt = $this->pdo->prepare("DELETE FROM books WHERE id = :id");
         return $stmt->execute(['id' => $id]);
     }
+
+    public function paginate(string $search = '', int $page = 1, int $limit = 10): array
+    {
+        $offset = ($page - 1) * $limit;
+        $params = [];
+        $where = '';
+
+        if (!empty($search)) {
+            $where = "WHERE judul LIKE :search1 OR penulis LIKE :search2";
+            $params['search1'] = "%$search%";
+            $params['search2'] = "%$search%";
+        }
+
+        // Hitung total data
+        $countSql = "SELECT COUNT(*) FROM books $where";
+        $stmtCount = $this->pdo->prepare($countSql);
+        $stmtCount->execute($params);
+        $total = (int) $stmtCount->fetchColumn();
+
+        // Ambil data dengan LIMIT dan OFFSET
+        $dataSql = "SELECT * FROM books $where ORDER BY id DESC LIMIT $limit OFFSET $offset";
+        $stmtData = $this->pdo->prepare($dataSql);
+        foreach ($params as $k => $v) {
+            $stmtData->bindValue(":$k", $v);
+        }
+        $stmtData->execute();
+        $rows = $stmtData->fetchAll();
+
+        $books = array_map(function ($row) {
+            return new Book(
+                $row['judul'],
+                $row['penulis'],
+                (int)$row['tahun'],
+                (int)$row['stok'],
+                (int)$row['id'],
+                $row['created_at'],
+                $row['updated_at']
+            );
+        }, $rows);
+
+        return [
+            'books' => $books,
+            'total' => $total,
+            'page' => $page,
+            'limit' => $limit,
+            'total_pages' => (int) ceil($total / $limit)
+        ];
+    }
 }

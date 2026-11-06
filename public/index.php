@@ -9,11 +9,18 @@ use App\Repositories\MySQLBookRepository;
 use App\Contracts\BookRepositoryInterface;
 use App\Services\BookService;
 use App\Controllers\BookController;
+use App\Middleware\CorsMiddleware;
+use App\Middleware\AuthMiddleware;
 
 // 1. Load Environment
 Env::load(__DIR__ . '/../.env');
 
-// 2. Setup Container (Dependency Injection)
+// 2. Jalankan CORS global
+$request = new Request();
+$cors = new CorsMiddleware();
+$cors->handle($request, function() {});
+
+// 3. Setup Container (Dependency Injection)
 $container = new Container();
 
 $container->bind(BookRepositoryInterface::class, function() {
@@ -28,16 +35,17 @@ $container->bind(BookController::class, function($c) {
     return new BookController($c->make(BookService::class));
 });
 
-// 3. Setup Router
+// 4. Setup Router & Proteksi Route
 $router = new Router();
 $controller = $container->make(BookController::class);
+$auth = new AuthMiddleware();
 
 $router->get('/api/books', [$controller, 'index']);
 $router->get('/api/books/{id}', [$controller, 'show']);
 $router->post('/api/books', [$controller, 'store']);
 $router->put('/api/books/{id}', [$controller, 'update']);
-$router->delete('/api/books/{id}', [$controller, 'destroy']);
+// Lindungi route DELETE dengan AuthMiddleware
+$router->delete('/api/books/{id}', [$controller, 'destroy'], [$auth]);
 
-// 4. Dispatch Request
-$request = new Request();
+// 5. Dispatch Request
 $router->dispatch($request);

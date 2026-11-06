@@ -14,16 +14,21 @@ class Router
     public function put(string $path, $handler): void { $this->add('PUT', $path, $handler); }
     public function delete(string $path, $handler): void { $this->add('DELETE', $path, $handler); }
 
-    public function dispatch(Request $request) {
+   public function dispatch(Request $request) {
         $uri = $request->getUri();
         $method = $request->getMethod();
 
         foreach ($this->routes as $route) {
+            // Ubah placeholder {id} menjadi pola regex penangkap angka/huruf
             $pattern = preg_replace('/\{([a-zA-Z0-9_]+)\}/', '([a-zA-Z0-9_]+)', $route['path']);
             $pattern = "#^" . $pattern . "$#";
 
             if ($route['method'] === $method && preg_match($pattern, $uri, $matches)) {
-                array_shift($matches);
+                array_shift($matches); // Buang elemen pertama (full string match)
+                
+                // Tambahkan objek $request ke urutan pertama argumen yang akan dikirim ke Controller
+                array_unshift($matches, $request);
+                
                 return call_user_func_array($route['handler'], $matches);
             }
         }

@@ -1,128 +1,86 @@
 <?php
 namespace App\Controllers;
 
-use App\Models\Book;
+use App\Services\BookService;
+use App\Core\Request;
+use App\Core\Response;
+use Exception;
 
 class BookController
 {
-    private Book $model;
+    private BookService $service;
 
-    public function __construct()
+    public function __construct(BookService $service)
     {
-        $this->model = new Book();
+        $this->service = $service;
     }
 
-    private function jsonResponse(array $data, int $statusCode = 200): void
+    public function index(Request $request): void
     {
-        http_response_code($statusCode);
-        header('Content-Type: application/json; charset=utf-8');
-        echo json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-        exit;
-    }
-
-    public function index(): void
-    {
-        $books = $this->model->getAll();
-        $this->jsonResponse([
-            'status' => 'success',
-            'data'   => $books
+        $books = $this->service->getAllBooks();
+        Response::json([
+            'success' => true,
+            'message' => 'Daftar buku',
+            'data' => array_map(fn($book) => $book->toArray(), $books)
         ]);
     }
 
-    public function show(int $id): void
+    public function show(Request $request, string $id): void
     {
-        $book = $this->model->find($id);
-        if (!$book) {
-            $this->jsonResponse([
-                'status'  => 'error',
-                'message' => 'Buku tidak ditemukan'
-            ], 404);
-        }
-
-        $this->jsonResponse([
-            'status' => 'success',
-            'data'   => $book
-        ]);
-    }
-
-    public function store(): void
-    {
-        $input = json_decode(file_get_contents('php://input'), true);
-
-        if (!isset($input['judul']) || !isset($input['penulis']) || !isset($input['tahun'])) {
-            $this->jsonResponse([
-                'status'  => 'error',
-                'message' => 'Kolom judul, penulis, dan tahun wajib diisi'
-            ], 422);
-        }
-
-        $created = $this->model->create($input);
-
-        if ($created) {
-            $this->jsonResponse([
-                'status'  => 'success',
-                'message' => 'Buku berhasil ditambahkan'
-            ], 201);
-        }
-
-        $this->jsonResponse([
-            'status'  => 'error',
-            'message' => 'Gagal menambahkan buku'
-        ], 500);
-    }
-
-    public function update(int $id): void
-    {
-        $book = $this->model->find($id);
-        if (!$book) {
-            $this->jsonResponse([
-                'status'  => 'error',
-                'message' => 'Buku tidak ditemukan'
-            ], 404);
-        }
-
-        $input = json_decode(file_get_contents('php://input'), true);
-        $updated = $this->model->update($id, [
-            'judul'   => $input['judul'] ?? $book['judul'],
-            'penulis' => $input['penulis'] ?? $book['penulis'],
-            'tahun'   => $input['tahun'] ?? $book['tahun'],
-            'stok'    => $input['stok'] ?? $book['stok'],
-        ]);
-
-        if ($updated) {
-            $this->jsonResponse([
-                'status'  => 'success',
-                'message' => 'Buku berhasil diperbarui'
+        try {
+            $book = $this->service->getBookById((int)$id);
+            Response::json([
+                'success' => true,
+                'message' => 'Detail buku',
+                'data' => $book->toArray()
             ]);
+        } catch (Exception $e) {
+            Response::json(['success' => false, 'message' => $e->getMessage()], 404);
         }
-
-        $this->jsonResponse([
-            'status'  => 'error',
-            'message' => 'Gagal memperbarui buku'
-        ], 500);
     }
 
-    public function destroy(int $id): void
+    public function store(Request $request): void
     {
-        $book = $this->model->find($id);
-        if (!$book) {
-            $this->jsonResponse([
-                'status'  => 'error',
-                'message' => 'Buku tidak ditemukan'
-            ], 404);
+        try {
+            $data = $request->getBody();
+            $id = $this->service->createBook($data);
+            $book = $this->service->getBookById($id);
+            Response::json([
+                'success' => true,
+                'message' => 'Buku berhasil dibuat',
+                'data' => $book->toArray()
+            ], 201);
+        } catch (Exception $e) {
+            Response::json(['success' => false, 'message' => $e->getMessage()], 422);
         }
+    }
 
-        $deleted = $this->model->delete($id);
-        if ($deleted) {
-            $this->jsonResponse([
-                'status'  => 'success',
+    public function update(Request $request, string $id): void
+    {
+        try {
+            $data = $request->getBody();
+            $this->service->updateBook((int)$id, $data);
+            $book = $this->service->getBookById((int)$id);
+            Response::json([
+                'success' => true,
+                'message' => 'Buku berhasil diperbarui',
+                'data' => $book->toArray()
+            ]);
+        } catch (Exception $e) {
+            Response::json(['success' => false, 'message' => $e->getMessage()], 404);
+        }
+    }
+
+    public function destroy(Request $request, string $id): void
+    {
+        try {
+            $this->service->deleteBook((int)$id);
+            Response::json([
+                'success' => true,
                 'message' => 'Buku berhasil dihapus'
             ]);
+        } catch (Exception $e) {
+            Response::json(['success' => false, 'message' => $e->getMessage()], 404);
         }
-
-        $this->jsonResponse([
-            'status'  => 'error',
-            'message' => 'Gagal menghapus buku'
-        ], 500);
     }
 }

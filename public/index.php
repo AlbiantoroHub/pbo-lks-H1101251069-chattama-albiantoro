@@ -2,38 +2,42 @@
 require_once __DIR__ . '/../vendor/autoload.php';
 
 use App\Config\Env;
+use App\Core\Container;
+use App\Core\Request;
+use App\Core\Router;
+use App\Repositories\MySQLBookRepository;
+use App\Contracts\BookRepositoryInterface;
+use App\Services\BookService;
 use App\Controllers\BookController;
 
-// Load file .env
+// 1. Load Environment
 Env::load(__DIR__ . '/../.env');
 
-// Parse request URI dan Method
-$uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-$method = $_SERVER['REQUEST_METHOD'];
+// 2. Setup Container (Dependency Injection)
+$container = new Container();
 
-$controller = new BookController();
+$container->bind(BookRepositoryInterface::class, function() {
+    return new MySQLBookRepository();
+});
 
-// Routing sederhana untuk /api/books
-if ($uri === '/api/books') {
-    if ($method === 'GET') {
-        $controller->index();
-    } elseif ($method === 'POST') {
-        $controller->store();
-    }
-} elseif (preg_match('#^/api/books/(\d+)$#', $uri, $matches)) {
-    $id = (int) $matches[1];
-    if ($method === 'GET') {
-        $controller->show($id);
-    } elseif ($method === 'PUT' || $method === 'PATCH') {
-        $controller->update($id);
-    } elseif ($method === 'DELETE') {
-        $controller->destroy($id);
-    }
-} else {
-    http_response_code(404);
-    header('Content-Type: application/json; charset=utf-8');
-    echo json_encode([
-        'status'  => 'error',
-        'message' => 'Endpoint tidak ditemukan'
-    ], JSON_PRETTY_PRINT);
-}
+$container->bind(BookService::class, function($c) {
+    return new BookService($c->make(BookRepositoryInterface::class));
+});
+
+$container->bind(BookController::class, function($c) {
+    return new BookController($c->make(BookService::class));
+});
+
+// 3. Setup Router
+$router = new Router();
+$controller = $container->make(BookController::class);
+
+$router->get('/api/books', [$controller, 'index']);
+$router->get('/api/books/{id}', [$controller, 'show']);
+$router->post('/api/books', [$controller, 'store']);
+$router->put('/api/books/{id}', [$controller, 'update']);
+$router->delete('/api/books/{id}', [$controller, 'destroy']);
+
+// 4. Dispatch Request
+$request = new Request();
+$router->dispatch($request);

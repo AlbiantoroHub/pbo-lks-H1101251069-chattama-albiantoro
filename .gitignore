@@ -1,4 +1,4 @@
 /vendor/
 .env
-test_connection.php
-test_book.php
+.DS_Store
+Thumbs.db

@@ -1,4 +1,16 @@
 <?php
+// Header CORS untuk mengizinkan akses dari frontend
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type, Accept');
+header('Access-Control-Max-Age: 86400');
+
+// Tangani preflight request dari browser
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(204);
+    exit;
+}
+
 require_once __DIR__ . '/../vendor/autoload.php';
 
 use App\Config\Env;
@@ -57,7 +69,7 @@ $router->post('/api/books', [$bookController, 'store']);
 $router->put('/api/books/{id}', [$bookController, 'update']);
 $router->delete('/api/books/{id}', [$bookController, 'destroy']);
 
-// Route Categories (5 Route)
+// Route Categories
 $router->get('/api/categories', [$categoryController, 'index']);
 $router->get('/api/categories/{id}', [$categoryController, 'show']);
 $router->post('/api/categories', [$categoryController, 'store']);
